@@ -1,4 +1,4 @@
-name: Build Kranol 4.14 
+name: Build Kranol 4.14
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
       CCACHE_MAXSIZE: "2G"
       CCACHE_HARDLINK: "true"
       KERNEL_DEFCONFIG: "vayu_defconfig"
-      KERNEL_CMDLINE: "ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out"
+      KERNEL_CMDLINE: "ARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out LLVM=1 LTO=thin"
 
     steps:
       - name: Checkout
@@ -56,12 +56,10 @@ jobs:
           chmod +x "$MKDTBO_PATH"
 
           curl -LSs "https://raw.githubusercontent.com/RapliVx/KernelSU-Next/refs/heads/hookless/kernel/setup.sh" | bash -s hookless
-          
+
       - name: Clean previous build (full clean)
         run: |
-          echo ">>> Removing previous build outputs..."
           rm -rf out
-          echo ">>> Running mrproper to fully clean source tree..."
           make mrproper
 
       - name: GetTime
@@ -72,12 +70,14 @@ jobs:
         run: |
           export PATH="$(pwd)/google-clang/bin/:$PATH"
           export LD=ld.lld
+          export LLVM=1
+          export LTO=thin
 
           echo ">>> Starting defconfig build..."
           make $KERNEL_CMDLINE $KERNEL_DEFCONFIG CC="ccache clang" 2>&1 | tee build_defconfig.log
 
           echo ">>> Starting kernel compilation (Image + dtbo.img)..."
-          make $KERNEL_CMDLINE CC="ccache clang" -j"$(nproc --all)" Image dtbo.img 2>&1 | tee build_kernel.log
+          make $KERNEL_CMDLINE CC="ccache clang" LD=ld.lld -j"$(nproc --all)" Image dtbo.img 2>&1 | tee build_kernel.log
 
           BUILD_RESULT=${PIPESTATUS[0]}
           if [ "$BUILD_RESULT" -ne 0 ]; then
