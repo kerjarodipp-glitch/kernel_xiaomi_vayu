@@ -1,0 +1,61 @@
+name: Backport SuSFS v2.0.0
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backport:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout target kernel
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # perlu semua riwayat untuk cherry-pick
+
+      - name: Setup Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add source remote (kylieeXD surya)
+        run: |
+          git remote add susfs-src https://github.com/kerjarodipp-glitch/kernel_xiaomi_vayu
+          git fetch susfs-src
+
+      - name: Try to cherry-pick SuSFS commit
+        id: cherry
+        run: |
+          set -e
+          git cherry-pick b9162dd755798b362528e8971191c1a9bd6c2e65 || echo "conflict" > .conflict
+          git cherry-pick 4b56688b152c9b7686fa7ab7fffe57e2f0699b71 || echo "conflict" > .conflict
+          git cherry-pick 1bc8fd282aaa1c05a927fd1510731483714765f2 || echo "conflict" > .conflict
+          git cherry-pick 837d371f0db25dcf42530243e16e504bd862aee3 || echo "conflict" > .conflict
+          git cherry-pick b2c763c07c0695594017fbbb396941af1a88e74b || echo "conflict" > .conflict
+          git cherry-pick 2ce244c4076dd741f49443ecef5cdb7b71980751 || echo "conflict" > .conflict
+          git cherry-pick fb78ceea3a197196d086a6498d9dfd2798da4b67 || echo "conflict" > .conflict
+          git cherry-pick 7cf84c22e4b290a434236adf66c1ffee901d85b8 || echo "conflict" > .conflict
+          git cherry-pick 914b4a78e0ad8f6a61455ed5fabd0ad65ce67ad6 || echo "conflict" > .conflict
+          git cherry-pick 914b4a78e0ad8f6a61455ed5fabd0ad65ce67ad6 || echo "conflict" > .conflict
+          git cherry-pick a0e76dff847aee42dfa5ec8e5449243d49c97a30 || echo "conflict" > .conflict
+          git cherry-pick 091afa001df6803f47a85d1de70d675c26c5ddfd || echo "conflict" > .conflict
+          git cherry-pick 39c97dea31c84ce9fe4cff5587eca147c03a5ef4 || echo "conflict" > .conflict
+          
+          
+      - name: Handle conflicts if any
+        if: ${{ hashFiles('.conflict') != '' }}
+        run: |
+          echo "::warning::Cherry-pick caused conflicts, keeping partial patch"
+          git status
+          git add .
+          git commit -m "Conflict Fix Needed"
+
+      - name: Push backport branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin 16
+
+      - name: Show summary
+        run: |
+          echo "If there were conflicts, please resolve manually in your repo."
