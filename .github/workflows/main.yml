@@ -53,5 +53,4 @@ jobs:
 
       # 5️⃣ Push changes ke default branch
       - name: Push to default branch
-        run: |
-          git push origin HEAD
+        run: git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/kerjarodipp-glitch/kernel_xiaomi_vayu.git HEAD
